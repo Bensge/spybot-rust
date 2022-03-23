@@ -457,9 +457,12 @@ impl Decode<Error> for Error {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
     use std::str::FromStr;
+    use super::event::ClientEnterView;
+    use super::Decode;
 
     #[test]
     fn test_vec_decode() {
@@ -526,5 +529,61 @@ mod tests {
 
         let cmd = cmd.arg_opt::<_, &str>("opt2", None);
         assert_eq!(cmd.into_inner(), "testcmd hello=world test=1234 opt=arg");
+    }
+
+    #[test]
+    fn test_cev() {
+        let raw = "
+cfid=0
+ctid=1
+reasonid=0
+clid=1235
+client_unique_identifier=T2FvlJL+js6a=
+client_nickname=testuser
+client_input_muted=0
+client_output_muted=0
+client_outputonly_muted=0
+client_input_hardware=0
+client_output_hardware=0
+client_meta_data
+client_is_recording=0
+client_database_id=987
+client_channel_group_id=8
+client_servergroups=6,11
+client_away=0
+client_away_message
+client_type=0
+client_flag_avatar
+client_talk_power=75
+client_talk_request=0
+client_talk_request_msg
+client_description
+client_is_talker=0
+client_is_priority_speaker=0
+client_unread_messages=0
+client_nickname_phonetic
+client_needed_serverquery_view_power=75
+client_icon_id=0
+client_is_channel_commander=0
+client_country=DE
+client_channel_group_inherited_channel_id=1
+client_badges
+client_myteamspeak_id
+client_integrations
+client_myteamspeak_avatar
+client_signed_badges
+client_estimated_location
+client_needed_serverquey_view_power=75
+client_output_hardwarer=0
+";
+        let buf = raw.replace("\n", " ");
+
+        ClientEnterView::decode(buf.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn test_vec_decode_comma() {
+        let buf = b"86,5";
+        assert_eq!(Vec::<usize>::decode(buf).unwrap(), vec![86, 5]);
     }
 }
