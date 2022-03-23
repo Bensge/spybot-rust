@@ -1,0 +1,3 @@
+[workspace]
+members = ["ts3", "ts3_derive"]
+exclude = ["examples"]
