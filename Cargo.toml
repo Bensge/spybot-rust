@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 ts3 = { path = "ts3-rs/ts3" }
 tokio = { version = "1.17.0", features = ["full"] }
+sea-orm = { version = "^0.6", features = [ "sqlx-mysql", "runtime-tokio-rustls", "macros", "debug-print" ], default-features = false }

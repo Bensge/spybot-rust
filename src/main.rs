@@ -1,3 +1,8 @@
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+
+use tokio::time::sleep;
 use ts3::client::ServerNotifyRegister;
 use ts3::event::{ClientMoved, TextMessage};
 use ts3::{
@@ -6,6 +11,12 @@ use ts3::{
     Client, RawResp,
 };
 use ts3::{Decode, Error};
+
+use crate::listener::Listener;
+use crate::user::User;
+
+mod listener;
+mod user;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -24,6 +35,59 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     client.use_port(9987).await?;
 
+    configure_unique_nickname(&client).await;
+
+    let users = Arc::new(Mutex::new(HashMap::new()));
+
+    let users_ref = users.clone();
+    let mut usr = users_ref.lock().unwrap();
+    for (idx, user) in client.clientlist().await?.iter().enumerate() {
+        println!("{} client {:?}", idx, user);
+
+        let u = User {
+            clid: user.clid,
+            unique_id: user.client_unique_identifier.clone(),
+            nickname: user.client_nickname.clone(),
+            is_query_user: user.client_type == 1,
+        };
+        usr.insert(u.clid, u);
+
+        // send_message(
+        //     &client,
+        //     user.clid,
+        //     "Check out todays sponsor of BensgeTS on http://amzn.to/2CUD262",
+        // )
+        //     .await;
+        // println!("sending message");
+        sleep(Duration::from_millis(2000)).await;
+    }
+    drop(usr);
+
+    // Assign a new event handler.
+    let handler = Listener::new(users.clone());
+    client.set_event_handler(handler);
+
+    client
+        .servernotifyregister(ServerNotifyRegister::Server)
+        .await?;
+    client
+        .servernotifyregister(ServerNotifyRegister::Channel(0))
+        .await?;
+    client
+        .servernotifyregister(ServerNotifyRegister::TextPrivate)
+        .await?;
+
+    tokio::signal::ctrl_c().await?;
+
+    println!("logging out...");
+    client.logout().await?;
+    println!("disconnecting...");
+    client.quit().await?;
+
+    Ok(())
+}
+
+async fn configure_unique_nickname(client: &Client) {
     let mut name_postfix = 0;
     loop {
         let name = format!(
@@ -46,76 +110,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             }) = res
             {
                 name_postfix += 1;
+                sleep(Duration::from_millis(200)).await;
                 continue;
             }
         }
         break;
     }
-
-    // Assign a new event handler.
-    client.set_event_handler(Handler);
-
-    client
-        .servernotifyregister(ServerNotifyRegister::Server)
-        .await?;
-    client
-        .servernotifyregister(ServerNotifyRegister::Channel(0))
-        .await?;
-    client
-        .servernotifyregister(ServerNotifyRegister::TextPrivate)
-        .await?;
-
-    for (idx, user) in client.clientlist().await?.iter().enumerate() {
-        println!("{} client {:?}", idx, user);
-    }
-
-    tokio::signal::ctrl_c().await?;
-
-    println!("logging out...");
-    client.logout().await?;
-    println!("disconnecting...");
-    client.quit().await?;
-
-    Ok(())
 }
 
-pub struct Handler;
+async fn send_message(client: &Client, client_id: usize, text: &str) {
+    // Send a private message to the client using "sendtextmessage".
+    let send_message_result = client
+        .sendtextmessage(TextMessageTarget::Client(client_id), &text)
+        .await;
 
-#[async_trait]
-impl EventHandler for Handler {
-    async fn cliententerview(&self, client: Client, event: ClientEnterView) {
-        println!(
-            "Client {} aka {} joined!",
-            event.clid, event.client_nickname
-        );
-
-        // Send a private message to the client using "sendtextmessage".
-        let send_message_result = client
-            .sendtextmessage(
-                TextMessageTarget::Client(event.clid as usize),
-                "Hello World from Spybot-oxidized!",
-            )
-            .await;
-
-        if let Err(error) = send_message_result {
-            println!("Error sending text message {}", error)
-        }
-    }
-
-    async fn clientmoved(&self, _client: Client, event: ClientMoved) {
-        let user_id = event.clid;
-        let channel_id = event.ctid; // channel-to-id as opposed to channel-from-id
-        println!("Client {user_id} moved to channel {channel_id}!");
-    }
-
-    async fn textmessage(&self, _client: Client, event: TextMessage) {
-        let message = event.msg;
-        let sender_id = event.invokerid;
-        let invoker_name = event.invokername;
-        println!("Got text message {message} from {sender_id} aka {invoker_name}");
+    if let Err(error) = send_message_result {
+        println!("Error sending text message {}", error)
     }
 }
 
 #[cfg(test)]
-mod test {
-}
+mod test {}
