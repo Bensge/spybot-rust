@@ -55,13 +55,6 @@
 //!
 //! ```
 
-pub mod client;
-pub mod event;
-
-pub use client::{Client, RawResp};
-pub use event::EventHandler;
-pub use ts3_derive::Decode;
-
 use std::{
     convert::TryFrom,
     error,
@@ -69,6 +62,13 @@ use std::{
     io,
     str::{from_utf8, FromStr},
 };
+
+pub use client::{Client, RawResp};
+pub use event::EventHandler;
+pub use ts3_derive::Decode;
+
+pub mod client;
+pub mod event;
 
 pub enum ParseError {
     InvalidEnum,
@@ -299,7 +299,6 @@ impl Decode<()> for () {
 // Implement `Decode` for `String`
 impl Decode<String> for String {
     fn decode(buf: &[u8]) -> Result<String, BoxError> {
-
         let text = String::from_utf8(buf.to_vec()).unwrap();
         let mut result = String::with_capacity(buf.len());
 
@@ -459,10 +458,11 @@ impl Decode<Error> for Error {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::str::FromStr;
+
     use super::event::ClientEnterView;
     use super::Decode;
+    use super::*;
 
     #[test]
     fn test_vec_decode() {

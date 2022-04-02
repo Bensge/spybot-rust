@@ -559,13 +559,13 @@ pub struct Version {
 #[derive(Debug, Decode, Default)]
 pub struct ClientInfo {
     /// client id
-    clid: usize,
+    pub clid: u64,
     /// channel id
-    cid: usize,
-    client_unique_identifier: String,
-    client_nickname: String,
+    pub cid: u64,
+    pub client_unique_identifier: String,
+    pub client_nickname: String,
     /// type of client. 0 = regular user. 1 = query user
-    client_type: usize,
+    pub client_type: u64,
 }
 
 /// RawResp contains all data returned from the server

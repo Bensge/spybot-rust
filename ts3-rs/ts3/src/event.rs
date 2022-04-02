@@ -21,6 +21,9 @@ impl Client {
         let (event_name, rest): (&[u8], &[u8]);
         {
             let vec: Vec<&[u8]> = buf.splitn(2, |c| *c == b' ').collect();
+            if vec.len() < 2 {
+                return false;
+            }
             event_name = vec[0];
             rest = vec[1];
         }
@@ -228,7 +231,7 @@ pub struct ClientEnterView {
     pub client_output_muted: bool,
     pub client_outputonly_muted: bool,
     pub client_input_hardware: u64,
-    pub client_output_hardwarer: u64,
+    pub client_output_hardware: u64,
     // client_meta_data: (),
     pub client_is_recording: bool,
     pub client_database_id: u64,
@@ -244,7 +247,7 @@ pub struct ClientEnterView {
     pub client_description: String,
     pub client_is_talker: bool,
     pub client_nickname_phoentic: String,
-    pub client_needed_serverquey_view_power: u64,
+    pub client_needed_serverquery_view_power: u64,
     pub client_icon_id: u64,
     pub client_country: String,
     pub client_channel_group_inherited_channel_id: u64,
@@ -254,15 +257,15 @@ pub struct ClientEnterView {
 /// Data for a `clientleftview` event.
 #[derive(Debug, Decode, Default)]
 pub struct ClientLeftView {
-    pub cfid: usize,
-    pub ctid: usize,
+    pub cfid: u64,
+    pub ctid: u64,
     pub reasonid: ReasonID,
-    pub invokerid: usize,
+    pub invokerid: u64,
     pub invokername: String,
     pub invokeruid: String,
     pub reasonmsg: String,
-    pub bantime: usize,
-    pub clid: usize,
+    pub bantime: u64,
+    pub clid: u64,
 }
 
 /// Data for a `serveredited` event.
@@ -404,10 +407,10 @@ pub struct ClientMoved {
 /// Data for a `textmessage` event.
 #[derive(Debug, Decode, Default)]
 pub struct TextMessage {
-    pub targetmode: usize,
+    pub targetmode: u64,
     pub msg: String,
-    pub target: usize,
-    pub invokerid: usize,
+    pub target: u64,
+    pub invokerid: u64,
     pub invokername: String,
     pub invokeruid: String,
 }
