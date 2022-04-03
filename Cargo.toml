@@ -6,6 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+mysql = "*"
+serde = "1.0.136"
 ts3 = { path = "ts3-rs/ts3" }
 tokio = { version = "1.17.0", features = ["full"] }
 sea-orm = { version = "^0.6", features = [ "sqlx-mysql", "runtime-tokio-rustls", "macros", "debug-print" ], default-features = false }

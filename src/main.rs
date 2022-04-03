@@ -14,12 +14,26 @@ use ts3::{Decode, Error};
 
 use crate::listener::Listener;
 use crate::user::User;
+use db::DB;
+use config_file::FromConfigFile;
+use crate::config::Config;
 
 mod listener;
 mod user;
+mod db;
+mod db_scheme;
+mod config;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+
+    let c = Config::new();
+
+    let mut database = DB::connect(&c)?;
+    database.get_total_users();
+
+    loop {}
+
     // Create a new client
     let client = Client::new("teeess.bensge.com:10011").await?;
 
@@ -86,6 +100,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     Ok(())
 }
+
 
 async fn configure_unique_nickname(client: &Client) {
     let mut name_postfix = 0;
