@@ -1,17 +1,16 @@
-use mysql::*;
-use mysql::prelude::*;
 use crate::Config;
+use mysql::prelude::*;
+use mysql::*;
 
 pub struct DB {
     connection: PooledConn,
 }
 
 impl DB {
-
     pub(crate) fn connect(config: &Config) -> std::result::Result<Self, Error> {
-
         let mut builder = OptsBuilder::new();
-        builder = builder.ip_or_hostname(Some(&config.db_host))
+        builder = builder
+            .ip_or_hostname(Some(&config.db_host))
             .db_name(Some(&config.db_name))
             .pass(Some(&config.db_password))
             .user(Some(&config.db_user))
@@ -19,7 +18,9 @@ impl DB {
 
         let pool = Pool::new(builder)?;
 
-        Ok(DB {connection: pool.get_conn()?})
+        Result::Ok(DB {
+            connection: pool.get_conn()?,
+        })
     }
 
     //inserts
@@ -38,7 +39,11 @@ impl DB {
 
     // total number of users
     pub fn get_total_users(&mut self) {
-        let count: i32 = self.connection.query_first("SELECT COUNT(*) FROM TSUser").unwrap().unwrap();
+        let count: i32 = self
+            .connection
+            .query_first("SELECT COUNT(*) FROM TSUser")
+            .unwrap()
+            .unwrap();
 
         println!("Number of total users: {:?}", count);
     }

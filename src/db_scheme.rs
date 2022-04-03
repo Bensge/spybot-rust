@@ -1,5 +1,5 @@
-use mysql::*;
 use mysql::prelude::*;
+use mysql::*;
 
 #[derive(Debug, PartialEq, Eq)]
 struct TSChannel {
@@ -8,7 +8,7 @@ struct TSChannel {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-struct TSChannel1{
+struct TSChannel1 {
     id: i32,
     name: char,
 }

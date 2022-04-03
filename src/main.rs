@@ -12,27 +12,24 @@ use ts3::{
 };
 use ts3::{Decode, Error};
 
-use crate::listener::Listener;
-use crate::user::User;
-use db::DB;
-use config_file::FromConfigFile;
 use crate::config::Config;
+use crate::ts_interface::{TSInterface};
+use crate::user::User;
+use config_file::FromConfigFile;
+use db::DB;
 
-mod listener;
-mod user;
+mod config;
 mod db;
 mod db_scheme;
-mod config;
+mod ts_interface;
+mod user;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-
     let c = Config::new();
 
     let mut database = DB::connect(&c)?;
     database.get_total_users();
-
-    loop {}
 
     // Create a new client
     let client = Client::new("teeess.bensge.com:10011").await?;
@@ -45,51 +42,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     println!("whoami = {:?}", data);
 
-    client.login(&"tsmonitor", &"HRFVuApZ").await?;
 
-    client.use_port(9987).await?;
+    client.login(&c.ts_name, &c.ts_password).await?;
+    client.use_port(c.ts_port).await?;
 
     configure_unique_nickname(&client).await;
 
     let users = Arc::new(Mutex::new(HashMap::new()));
 
-    let users_ref = users.clone();
-    let mut usr = users_ref.lock().unwrap();
-    for (idx, user) in client.clientlist().await?.iter().enumerate() {
-        println!("{} client {:?}", idx, user);
 
-        let u = User {
-            clid: user.clid,
-            unique_id: user.client_unique_identifier.clone(),
-            nickname: user.client_nickname.clone(),
-            is_query_user: user.client_type == 1,
-        };
-        usr.insert(u.clid, u);
-
-        // send_message(
-        //     &client,
-        //     user.clid,
-        //     "Check out todays sponsor of BensgeTS on http://amzn.to/2CUD262",
-        // )
-        //     .await;
-        // println!("sending message");
-        sleep(Duration::from_millis(2000)).await;
-    }
-    drop(usr);
 
     // Assign a new event handler.
-    let handler = Listener::new(users.clone());
-    client.set_event_handler(handler);
+    let mut interface = TSInterface::new(users.clone());
+    interface.init(&client).await?;
+    client.set_event_handler(interface);
 
-    client
-        .servernotifyregister(ServerNotifyRegister::Server)
-        .await?;
-    client
-        .servernotifyregister(ServerNotifyRegister::Channel(0))
-        .await?;
-    client
-        .servernotifyregister(ServerNotifyRegister::TextPrivate)
-        .await?;
+
 
     tokio::signal::ctrl_c().await?;
 
@@ -100,7 +68,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     Ok(())
 }
-
 
 async fn configure_unique_nickname(client: &Client) {
     let mut name_postfix = 0;
